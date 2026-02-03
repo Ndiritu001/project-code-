@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BRISA MOTOR AND REPAIR COMPANY | Cars, Parts & AI Care</title>
+</head>
+<style>
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f1f5f9;
+    }
+    
+    header {
+        background: #0a66ff;
+        color: white;
+        padding: 15px 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    section {
+        padding: 40px;
+    }
+    
+    .card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        max-width: 420px;
+        margin: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    input,
+    select,
+    button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+    
+    button {
+        background: #0a66ff;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    
+    button:hover {
+        opacity: 0.9;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
+    .dashboard {
+        max-width: 900px;
+        margin: auto;
+    }
+    
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+    
+    .box {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    
+    .logout {
+        background: #2c26dcff;
+    }
+    
+    .success {
+        color: green;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+
+
+    <header>
+        <marquee>BRISA MOTOR & REPAIRS
+            <div id="menu" align="middle">
+                <a href="/index.html">home</a> |
+                <a href="/about/contact_us.html">contact us </a> |
+                <a href="/about/index.html">about us</a> |
+            </div>
+        </marquee>
+        <button class="logout" onclick="logout()">Logout</button>
+    </header>
+
+
+    <section id="loginSection">
+        <div class="card">
+            <h2>User Login</h2>
+
+
+            <input type="email" id="email" placeholder="Enter Email">
+
+
+            <input type="password" id="password" placeholder="Enter Password">
+
+            <button onclick="login()">Login</button>
+        </div>
+    </section>
+
+    <section id="dashboardSection" class="hidden">
+        <div class="dashboard">
+
+            <h2 id="welcomeMessage"></h2>
+
+            <div class="grid">
+                <div class="box">
+                    <h3>Your Vehicle</h3>
+                    <select id="vehicleType">
+                    <option>Sedan</option>
+                    <option>SUV</option>
+                    <option>Truck</option>
+                    <option>Motorcycle</option>
+                </select>
+
+                    <select id="fuelType">
+                    <option>Petrol</option>
+                    <option>Diesel</option>
+                    <option>Electric</option>
+                </select>
+                    <input type="text" id="vehicleModel" placeholder="Vehicle Model">
+                    <button onclick="saveVehicle()">Save Vehicle</button>
+                </div>
+
+                <div class="box">
+                    <h3>Book a Service</h3>
+                    <select id="service">
+                    <option value="0">Select Service</option>
+                    <option value="3000">Oil Change - KES 3,000</option>
+                    <option value="6000">Brake Repair - KES 6,000</option>
+                    <option value="8000">Engine Diagnostics - KES 8,000</option>
+                </select>
+                    <input type="date" id="appointmentDate">
+                    <input type="time" id="appointmentTime">
+
+                    <button onclick="bookService()">Book Appointment</button>
+                    <p id="bookingStatus"></p>
+                </div>
+
+                div class="card">
+                <h3>Billing</h3>
+                <div id="billArea">
+                    <p>No bill generated yet.</p>
+                </div>
+                <div class="card">
+                    <h3>Sales Records</h3>
+                    <ul id="salesList"></ul>
+                </div>
+
+                <div class="card">
+                    <h3>Inventory Status</h3>
+                    <ul id="inventoryList"></ul>
+                </div>
+                <script>
+                    // ---------- INITIAL SETUP ----------
+                    let inventory = JSON.parse(localStorage.getItem("inventory")) || {
+                        oil: 10,
+                        brake: 6,
+                        engine: 4
+                    };
+                    saveInventory();
+
+                    function login() {
+                        const email = document.getElementById("email").value;
+                        if (!email) {
+                            alert("Enter email");
+                            return;
+                        }
+                        localStorage.setItem("user", email);
+                        loadDashboard();
+                    }
+
+                    function logout() {
+                        localStorage.removeItem("user");
+                        location.reload();
+                    }
+
+                    function loadDashboard() {
+                        if (localStorage.getItem("user")) {
+                            document.getElementById("loginSection").classList.add("hidden");
+                            document.getElementById("dashboardSection").classList.remove("hidden");
+                            displayInventory();
+                            displaySales();
+                        }
+                    }
+
+                    loadDashboard();
+
+                    // ---------- BOOKING ----------
+                    function bookService() {
+                        const serviceData = document.getElementById("service").value;
+                        const date = document.getElementById("appointmentDate").value;
+                        const time = document.getElementById("appointmentTime").value;
+
+                        if (!serviceData || !date || !time) {
+                            alert("Complete all booking fields");
+                            return;
+                        }
+
+                        const [name, price, item] = serviceData.split("|");
+
+                        // Inventory check
+                        if (inventory[item] <= 0) {
+                            alert("Service unavailable. Inventory out of stock.");
+                            return;
+                        }
+
+                        // Reduce inventory
+                        inventory[item]--;
+                        saveInventory();
+
+                        // Create booking record
+                        const booking = {
+                            service: name,
+                            amount: price,
+                            date: date,
+                            time: time
+                        };
+
+                        // Save sale record
+                        let sales = JSON.parse(localStorage.getItem("sales")) || [];
+                        sales.push(booking);
+                        localStorage.setItem("sales", JSON.stringify(sales));
+
+                        // Generate bill
+                        generateBill(booking);
+
+                        document.getElementById("bookingStatus").innerHTML =
+                            "<span class='success'>Appointment booked successfully</span>";
+
+                        displaySales();
+                        displayInventory();
+                    }
+
+                    // ---------- BILLING ----------
+                    function generateBill(booking) {
+                        document.getElementById("billArea").innerHTML = `
+        <p><strong>Service:</strong> ${booking.service}</p>
+        <p><strong>Amount:</strong> KES ${booking.amount}</p>
+        <p><strong>Date:</strong> ${booking.date}</p>
+        <p><strong>Time:</strong> ${booking.time}</p>
+        <p class="success">Payment Status: Paid</p>
+    `;
+                    }
+
+                    // ---------- SALES ----------
+                    function displaySales() {
+                        const sales = JSON.parse(localStorage.getItem("sales")) || [];
+                        const list = document.getElementById("salesList");
+                        list.innerHTML = "";
+
+                        sales.forEach(sale => {
+                            const li = document.createElement("li");
+                            li.textContent =
+                                `${sale.service} - KES ${sale.amount} (${sale.date})`;
+                            list.appendChild(li);
+                        });
+                    }
+
+                    // ---------- INVENTORY ----------
+                    function saveInventory() {
+                        localStorage.setItem("inventory", JSON.stringify(inventory));
+                    }
+
+                    function displayInventory() {
+                        const list = document.getElementById("inventoryList");
+                        list.innerHTML = "";
+
+                        for (let item in inventory) {
+                            const li = document.createElement("li");
+                            li.textContent = `${item.toUpperCase()} Parts: ${inventory[item]} left`;
+                            list.appendChild(li);
+                        }
+                    }
+                </script>
+
+</body>
+
+</html>
